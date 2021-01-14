@@ -159,18 +159,48 @@ Pop the top cell off the stack and go there
 Go to  # 1 """
 
 
+def clean_run(robot_name,edge):
+    x,y = world.get_position()
+
+    if edge == 'top' or edge == '':
+        if obstacles.is_path_blocked(x,y,x,200) == False:
+            
+            do_forward(robot_name,200)
+            return True
+    elif edge == 'right':
+        if obstacles.is_path_blocked(x,y,100,y) == False:
+            do_right_turn(robot_name)
+            do_forward(robot_name,100)
+            return True
+    elif edge == 'left':
+        if obstacles.is_path_blocked(x,y,-100,y) == False:
+            do_left_turn(robot_name)
+            do_forward(robot_name,100)
+            return True
+    else:
+        if obstacles.is_path_blocked(x,y,x,-200) == False:
+            do_back(robot_name,200)
+            return True
+    return False
 
 def do_mazerun(robot_name,edge):
     import new_mazerunner as mazerun
     obstacle_ls = obstacles.get_obstacles()
+
+    if clean_run(robot_name, edge):
+        if edge == '':
+            edge = 'top'
+        return True, f"{robot_name}: I am at the {edge} edge."
+    
     path = mazerun.find(world.position_x+100, world.position_y+200,edge,robot_name,obstacle_ls)
 
     edge = 'top' if edge == '' else edge
 
     if path == "There is no way out":
         return True, f"{robot_name}: {path}"
-
+    print (path)
     compiled_moves = compile_moves(path,edge)
+    print (compiled_moves)
     compiled_commands = compile_commands(compiled_moves)
     
     for command in compiled_commands:
@@ -396,6 +426,7 @@ def call_command(command_name, command_arg, robot_name):
     elif command_name == 'replay':
         return do_replay(robot_name, command_arg)
     elif command_name == 'mazerun':
+        print(f"{robot_name} starting maze run..")
         return do_mazerun(robot_name, command_arg)
     return False, None
 
