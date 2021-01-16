@@ -2,129 +2,83 @@ from collections import deque
 from math import sqrt
 import robot
 
-def two_d_maze(maze, obstacle_ls):
+#R, C  .. R = Number of rows, C = Number of col
+#m = char matrix of size R X C
+#prev : {co-ord: previous position}
+#visited : list of co-ords visited already
+#Q position to move to next list 
+#RQ, RC = row Q, col Q 
+#adjacency matrix : co-ord with info about neighbors : eg: {[id / co-ord],[direction: {N: 0 , E: 1, S: 0 , W: 0}}
+#eg: [(x,y) :  {N: 0 , E: 1, S: 0 , W: 0} ] 
+#for each co ord we need to know if the position is blocked to see if we can move there
+#1 = wall / obstacle , 0: walkable path
 
-    # Create a 2D array maze using our obstacles
+#start co-ord : current position
+#end co-ord : find_edge
 
-    # maze : a list of lists containing rows
-    #     if : obstacle present place 1 otherwise 0
-    # returns: our 2D array with obstacles
-    for obs in obstacle_ls:
-        for y in range(obs[1]+200, obs[1]+205):
-            for x in range(obs[0]+100, obs[0]+105):
-                try:
-                    maze[abs(y)][abs(x)] = 1
-                except IndexError:
-                    pass
-    return maze
+#add start to Q
+#add child-nodes to Q
+#pop start
+#add child-child nodes to Q
 
-def make_graph(maze):
-    # maze is a 2D array that is either 0 or 1
-    #     1 - Wall
-    #     0 - path
-    
-    # returns: graph (dict) : adjacency matrix about each co-ord 
+#reached_end : (boolean) flag for if we reach desired edge
 
-    height = len(maze)
-    width = len(maze[0])
-
-    graph = {(i,j): [] for j in range(width) for i in range(height) if not maze[i][j]}
-
-    for row, col in graph.keys():
-        if row < height - 1 and not maze[row + 1][col]:
-            graph[(row, col)].append(("N", (row + 1, col)))
-            graph[(row + 1, col)].append(("S", (row,col)))
-
-        if col < width - 1 and not maze[row][col + 1]:
-            graph[(row, col)].append(("E", (row, col + 1)))
-            graph[(row, col + 1)].append(("W", (row, col)))
-    
-    return graph
-
-def find_end(ends, start):
-    # Find our nearest end point 
-
-    # ends : list of ends for specific edge
-    # start : start co-ord
-
-    # return : end co-ord that is nearest to start pos
-    shortest_dist_pos = None
-    shortest_dist = None
-
-    for i in ends:
-        dist = sqrt(((start[0] - i[0]) ** 2) + ((start[1] - i[1]) ** 2))
-        if shortest_dist is None or dist < shortest_dist:
-            shortest_dist = dist
-            shortest_dist_pos = i
-    
-    end = shortest_dist_pos
-    return end
-
-def solvable_maze(maze, edge, x, y, obstacle_ls):
-
-    # maze : 2D array init as 0s Only
-    # edge: edge to solve to mark with 4  
-    # x : start x
-    # y : start y
-
-    # returns : start pos co-ord, and end pos co-ord
-    global ends
-    ends = []
-
-    for y_coord in range(len(maze)):
-        for x_coord in range(len(maze[y])):
-            if edge == 'bottom':
-                maze[0][x_coord] = 4
-            
-            elif edge == 'right':
-                maze[y_coord][200] = 4
-            
-            elif edge == 'left':
-                maze[y_coord][0] = 4
-            
-            else:
-                maze[400][x_coord] = 4
-            
-    maze = two_d_maze(maze, obstacle_ls)
-    maze[y][x] = 5
-
-    for y in range(len(maze)): 
-        for x in range(len(maze[y])):
-            char = maze[y][x]
-
-            if char == 5:
-                start = (y, x)
-
-            if char == 4:
-                ends.append((y,x))
-            
-    end = find_end(ends,start)
-    return end,start
+def find_edge(edge):
+	return ends
+	end_points = []
+	
+	if edge == 'top' or edge == '':
+		for x in range(-100,100,1):
+			if robot.obstacles.is_position_blocked(x,200) == False:
+				end_points.append(x, 200)
+		return end_points		
+	elif edge == 'right':
+		for y in range(-200,200,1):
+			if robot.obstacles.is_position_blocked(-100,y) == False:
+				end_points.append(-100, y)
+		return end_points		
+	elif edge == 'bottom':
+		for x in range(-100,100,1):
+			if robot.obstacles.is_position_blocked(x,-200) == False:
+				end_points.append(x, -200)
+		return end_points		
+	else edge == 'left':
+		for y in range(-200,200,1):
+			if robot.obstacles.is_position_blocked(-100,y) == False:
+				end_points.append(-100,y)
+		return end_points		
 
 
-def find(x,y,edge,robot_name,obstacle_ls):
+def make_adjacency_matrix(obs_ls):
+	#adj_dict 
+	#{ 0, 0: {N: 0, E: 0, S: 0, W: 0}}
+	adj_dict = {}
+	temp = {}
+	for x in range(-100, 100, 1):
+		for y in range(-200,200,1):
+			adj_dict[x,y] = {}
+			adj_dict[x,y]['N'] = 0
+			adj_dict[x,y]['E'] = 0
+			adj_dict[x,y]['S'] = 0
+			adj_dict[x,y]['W'] = 0
 
-    import time
-    starttime = time.time()
-    maze = [[0 for x in range(201)] for y in range(401)]
+def is_end(ends, current):
+	if current in ends:
+		return True
+	return False
 
-    array_maze = two_d_maze(maze, obstacle_ls)
-
-    graph = make_graph(array_maze)
-    end,start = solvable_maze(maze,edge,x,y,obstacle_ls)
-
-    que = deque([("",start)])
-    visited = set()
-
-    while que:
-        path, current = que.popleft()
-        if current == end:
-            print(f"The endtime was{time.time() - starttime}")
-            return path
-        if current in visited:
-            continue
-        visited.add(current)
-
-        for direction,neighbour in graph[current]:
-            que.append((path+direction,neighbour))
-    return "There is no way out"
+def main_bfs(robot_name, start, edge, obs_ls):
+	#ends - list of valid end co-ords
+	#start - origin x,y
+	#obs_ls : list of obs
+	#prev : dict containing previous co-ord for use in backtracking path
+	#visted : list of co-ords already visited
+	#Qx, Qy: parallel q of nodes still to be visited - start with start , enque open neighbours
+	#end_found: boolean: flag for when end is reached. true / false : using edge and is_end(ends , current)
+	end_found = False
+	q.append(start_x,start_y)
+	
+	while not end_found():
+		current = q.deque()
+		
+ 
